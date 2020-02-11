@@ -1,9 +1,22 @@
 {
-  "greeting": "Welcome to Calculator!",
-  "first": "What's the first number?",
-  "second": "What's the second number?",
-  "number_fail": "That doesn't appear to be a valid number.",
-  "calculation": "What operation would you like to perform?\n1) Add 2) Subtract 3) Multiply 4) Divide",
-  "calculation_fail": "You must choose 1, 2, 3, or 4",
-  "continue": "Type 'yes' for another calculation, or anything else to quit"
+  "en": {
+    "greeting": "Welcome to Calculator!",
+    "first": "What's the first number?",
+    "second": "What's the second number?",
+    "number_fail": "That doesn't appear to be a valid number.",
+    "calculation": "What operation would you like to perform?\n1) Add 2) Subtract 3) Multiply 4) Divide",
+    "calculation_fail": "You must choose 1, 2, 3, or 4",
+    "result": "The result is ",
+    "continue": "Type 'yes' for another calculation, or anything else to quit"
+  },
+  "jp": {
+    "greeting": "電卓へようこそ！",
+    "first": "最初の数字は何ですか？",
+    "second": "2番目の数字は何ですか？",
+    "number_fail": "これは有効な数字ではないようです。",
+    "calculation": "どの操作を実行しますか？\n1）加算 2）減算 3）乗算 4）除算",
+    "calculation_fail": "1、2、3、または 4 を選択する必要があります",
+    "result": "結果は ",
+    "continue": "「yes」と入力して別の計算を行うか、他の計算を終了します"
+  }
 }
