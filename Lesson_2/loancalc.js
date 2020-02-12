@@ -1,3 +1,4 @@
+/* eslint-disable radix */
 //Problem statement: build a mortgage calculator
 
 /*
@@ -22,8 +23,25 @@ Edge cases? does the app support no-interest loans?
 
 /*
 examples:
-15 year loan, $1,000,000 dollars, 3.3% rate
-zillow calculator says 8859 (doesn't include decimals)
+test cases at end of file, confirmed accurate and working
+
+data structures:
+none needed, each iteration of the program is atomic.
+
+algorithm:
+GET total loan amount,
+  reject invalid, non-positive numbers,
+  verify amount with user
+GET Annual percentage rate as a %, not a decimal
+  verify % with user
+GET duration of the loan (months),
+  convert to years, display to user
+  verify duration with user
+
+CALCULATE monthly payment with provided formula
+
+RETURN monthly payment in $
+PROMPT for another calculation
 
 */
 
@@ -33,10 +51,16 @@ function prompt(message) {
   console.log(`=> ${message}`);
 }
 
-function invalidNumber(number) {
-  return (
-    number.trimStart() === "" || Number.isNaN(Number(number)) || number === 0
-  );
+function invalidNumber(number, numberIsAPR = false) {
+  if (numberIsAPR === true) {
+    return number.trimStart() === "" || Number.isNaN(Number(number));
+  } else {
+    return (
+      number.trimStart() === "" ||
+      Number.isNaN(Number(number)) ||
+      parseInt(number) === 0
+    );
+  }
 }
 
 function calculateMonthlyPayment(
@@ -56,27 +80,36 @@ function calculateMonthlyPayment(
   }
   return monthlyPayment;
 }
-
-/*
 prompt("Mortgage Calculator!");
-prompt("Enter your loan amount: ");
-let loanAmount = readline.question();
+let userApprovesTotal = false;
+let userApprovesAPR = false;
+let userApprovesDuration = false;
 
-while (invalidNumber(loanAmount)) {
-  prompt("Sorry that's not valid loan amount. Please enter a positive number");
-  loanAmount = readline.question();
+while (!userApprovesTotal) {
+  prompt("Enter your loan amount: ");
+  let loanAmount = readline.question();
+
+  while (invalidNumber(loanAmount)) {
+    prompt(
+      "Sorry that's not valid loan amount. Please enter a positive number"
+    );
+    loanAmount = readline.question();
+  }
+
+  prompt("You entered your total loan as $" + loanAmount);
+  prompt(
+    "Is this amount correct?\nEnter 'y' to approve, or any other input to re-enter your loan amount."
+  );
+  if (readline.question().toLowerCase() === "y") {
+    userApprovesTotal = true;
+  }
 }
-*/
 
-//test cases
+//test cases, all evaluate to true
 console.log(
-  calculateMonthlyPayment(1000000, 0.033, 180).toFixed(2) === "7051.01"
+  calculateMonthlyPayment(1000000, 0.033, 180).toFixed(2) === "7051.01",
+  calculateMonthlyPayment(100000, 0.06, 360).toFixed(2) === "599.55",
+  calculateMonthlyPayment(1000000, 0.033, 120).toFixed(2) === "9795.17",
+  calculateMonthlyPayment(275000, 0.048, 250).toFixed(2) === "1742.20",
+  calculateMonthlyPayment(275000, 0, 250).toFixed(2) === "1100.00"
 );
-console.log(calculateMonthlyPayment(100000, 0.06, 360).toFixed(2) === "599.55");
-console.log(
-  calculateMonthlyPayment(1000000, 0.033, 120).toFixed(2) === "9795.17"
-);
-console.log(
-  calculateMonthlyPayment(275000, 0.048, 250).toFixed(2) === "1742.20"
-);
-console.log(calculateMonthlyPayment(275000, 0, 250).toFixed(2) === "1100.00");
