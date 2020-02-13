@@ -81,35 +81,106 @@ function calculateMonthlyPayment(
   return monthlyPayment;
 }
 prompt("Mortgage Calculator!");
-let userApprovesTotal = false;
-let userApprovesAPR = false;
-let userApprovesDuration = false;
+let userIsDone = false;
 
-while (!userApprovesTotal) {
-  prompt("Enter your loan amount: ");
-  let loanAmount = readline.question();
-
-  while (invalidNumber(loanAmount)) {
-    prompt(
-      "Sorry that's not valid loan amount. Please enter a positive number"
-    );
+while (!userIsDone) {
+  let userApprovesTotal = false;
+  let userApprovesAPR = false;
+  let userApprovesDuration = false;
+  let loanAmount;
+  let aprAmount;
+  let durationAmount;
+  //get, verify, and confirm the loan amount
+  while (!userApprovesTotal) {
+    prompt("Enter your loan amount: ");
     loanAmount = readline.question();
+
+    while (invalidNumber(loanAmount)) {
+      prompt(
+        "Sorry that's not valid loan amount. Please enter a positive number"
+      );
+      loanAmount = readline.question();
+    }
+
+    prompt("You entered your total loan as $" + loanAmount);
+    prompt(
+      "Is this amount correct?\nEnter 'y' to approve, or any other input to re-enter your loan amount."
+    );
+    if (readline.question().toLowerCase() === "y") {
+      userApprovesTotal = true;
+    }
   }
 
-  prompt("You entered your total loan as $" + loanAmount);
-  prompt(
-    "Is this amount correct?\nEnter 'y' to approve, or any other input to re-enter your loan amount."
+  //get, verify, and confirm the APR
+  while (!userApprovesAPR) {
+    prompt("Enter your APR as a whole percentage (enter 5 for a 5% APR)");
+    aprAmount = readline.question();
+
+    //invalidNumber() takes 2 arguments when checking for zero-interest loans
+    while (invalidNumber(aprAmount, true)) {
+      prompt("Sorry that's not valid APR. Please enter 0 or a positive number");
+      aprAmount = readline.question();
+    }
+
+    prompt("You entered your APR as " + aprAmount + "%");
+    prompt(
+      "Is this APR correct?\nEnter 'y' to approve, or any other input to re-enter your loan amount."
+    );
+    if (readline.question().toLowerCase() === "y") {
+      userApprovesAPR = true;
+    }
+  }
+
+  //get, verify, and confirm the duration of the loan
+  while (!userApprovesDuration) {
+    prompt(
+      "Enter the duration of the loan in months (enter 24 for a 2 year loan):"
+    );
+    durationAmount = readline.question();
+
+    while (invalidNumber(durationAmount)) {
+      prompt("Sorry that's not valid duration. Please enter a positive number");
+      durationAmount = readline.question();
+    }
+
+    prompt(
+      "You entered a duration of " +
+        durationAmount +
+        " months, or " +
+        parseFloat(durationAmount / 12).toFixed(2) +
+        " years."
+    );
+    prompt(
+      "Is this duration correct?\nEnter 'y' to approve, or any other input to re-enter duration of the loan."
+    );
+    if (readline.question().toLowerCase() === "y") {
+      userApprovesDuration = true;
+    }
+  }
+
+  prompt("Based on your input, your monthly payment is ");
+  console.log(
+    "$",
+    calculateMonthlyPayment(
+      loanAmount,
+      aprAmount / 100,
+      durationAmount
+    ).toFixed(2)
   );
-  if (readline.question().toLowerCase() === "y") {
-    userApprovesTotal = true;
+
+  prompt(
+    "Would you like to calculate another loan?\nEnter 'y' to run the calculator again, or any other input to quit."
+  );
+  if (readline.question().toLowerCase() !== "y") {
+    userIsDone = true;
   }
 }
-
 //test cases, all evaluate to true
-console.log(
+/*console.log(
   calculateMonthlyPayment(1000000, 0.033, 180).toFixed(2) === "7051.01",
   calculateMonthlyPayment(100000, 0.06, 360).toFixed(2) === "599.55",
   calculateMonthlyPayment(1000000, 0.033, 120).toFixed(2) === "9795.17",
   calculateMonthlyPayment(275000, 0.048, 250).toFixed(2) === "1742.20",
   calculateMonthlyPayment(275000, 0, 250).toFixed(2) === "1100.00"
 );
+*/
