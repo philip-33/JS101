@@ -8,13 +8,13 @@ const WINNING_COMBOS = {
   spock: ["rock", "scissors"]
 };
 
-function playerWins(playerOneChoice, playerTwoChoice) {
-  if (WINNING_COMBOS[playerOneChoice].includes[playerTwoChoice]) {
-    return "Player 1";
-  } else if (WINNING_COMBOS[playerTwoChoice].includes[playerOneChoice]) {
-    return "Player 2";
+function getWinner(playerOneChoice, playerTwoChoice) {
+  if (WINNING_COMBOS[playerOneChoice].includes(playerTwoChoice)) {
+    return "\nPlayer 1 wins! 🏆 👨";
+  } else if (WINNING_COMBOS[playerTwoChoice].includes(playerOneChoice)) {
+    return "\nThe computer wins! 💥 🤖";
   } else {
-    return "Tie";
+    return "\n⚠️ It's a tie! ⚠️";
   }
 }
 
@@ -43,7 +43,9 @@ function displayWinner(choice, computerChoice) {
   }
 }
 */
-while (true) {
+let tournamentInProgress = true;
+
+while (tournamentInProgress) {
   prompt(`Choose one: ${VALID_CHOICES.join(", ")}`);
   let choice = readline.question();
 
@@ -55,10 +57,16 @@ while (true) {
   let randomIndex = Math.floor(Math.random() * VALID_CHOICES.length);
   let computerChoice = VALID_CHOICES[randomIndex];
 
-  displayWinner(choice, computerChoice);
+  console.log(
+    `\nYou picked ${choice}, and the computer picked ${computerChoice}`,
+    getWinner(choice, computerChoice),
+    "\n"
+  );
 
   prompt(
-    'Do you want to play again? enter "y" to continue or anything else to quit.'
+    'Do you want compete again?\nEnter "y" to participate in another RPSLS tournament or anything else to quit.'
   );
-  if (readline.question().toLowerCase() !== "y") break;
+  if (readline.question().toLowerCase() !== "y") {
+    tournamentInProgress = false;
+  }
 }
