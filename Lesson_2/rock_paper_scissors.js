@@ -7,43 +7,49 @@ const WINNING_COMBOS = {
   lizard: ["paper", "spock"],
   spock: ["rock", "scissors"]
 };
+const PLAYER_WINS = {
+  player1: 0,
+  player2: 0
+};
 
 function getWinner(playerOneChoice, playerTwoChoice) {
   if (WINNING_COMBOS[playerOneChoice].includes(playerTwoChoice)) {
-    return "\nPlayer 1 wins! 🏆 👨";
+    return "Player 1";
   } else if (WINNING_COMBOS[playerTwoChoice].includes(playerOneChoice)) {
-    return "\nThe computer wins! 💥 🤖";
+    return "Player 2";
   } else {
-    return "\n⚠️ It's a tie! ⚠️";
+    return false;
   }
+}
+
+function checkForChampion() {
+  if (PLAYER_WINS.player1 === 5) {
+    return "Player 1";
+  } else if (PLAYER_WINS.player2 === 5) {
+    return "Player 2";
+  } else {
+    return false;
+  }
+}
+
+function printCurrentScores() {
+  console.log(
+    "\nThe current score is:",
+    `\nPlayer 1: ${PLAYER_WINS.player1}`,
+    `\nPlayer 2: ${PLAYER_WINS.player2}`
+  );
 }
 
 function prompt(message) {
   console.log(`=> ${message}`);
 }
 
-/*
-function displayWinner(choice, computerChoice) {
-  prompt(`You chose ${choice}, computer chose ${computerChoice}`);
-
-  if (
-    (choice === "rock" && computerChoice === "scissors") ||
-    (choice === "paper" && computerChoice === "rock") ||
-    (choice === "scissors" && computerChoice === "paper")
-  ) {
-    prompt("You win!");
-  } else if (
-    (choice === "rock" && computerChoice === "paper") ||
-    (choice === "paper" && computerChoice === "scissors") ||
-    (choice === "scissors" && computerChoice === "rock")
-  ) {
-    prompt("Computer wins!");
-  } else {
-    prompt("It's a tie");
-  }
-}
-*/
 let tournamentInProgress = true;
+
+prompt(
+  "Welcome to the Rock, Paper, Scissors, Lizard, Spock Grand Championship!"
+);
+prompt("The first player to 5 wins is the Grand Winner!\n");
 
 while (tournamentInProgress) {
   prompt(`Choose one: ${VALID_CHOICES.join(", ")}`);
@@ -58,15 +64,25 @@ while (tournamentInProgress) {
   let computerChoice = VALID_CHOICES[randomIndex];
 
   console.log(
-    `\nYou picked ${choice}, and the computer picked ${computerChoice}`,
-    getWinner(choice, computerChoice),
-    "\n"
+    `\nYou picked ${choice}, and the computer picked ${computerChoice}.\n`
   );
+  let newWinner = getWinner(choice, computerChoice);
+  if (newWinner !== false) {
+    console.log(`The winner is ${newWinner}!`);
+    if (newWinner === "Player 1") {
+      PLAYER_WINS.player1++;
+    } else {
+      PLAYER_WINS.player2++;
+    }
+  } else {
+    console.log("It's a tie!");
+  }
 
-  prompt(
-    'Do you want compete again?\nEnter "y" to participate in another RPSLS tournament or anything else to quit.'
-  );
-  if (readline.question().toLowerCase() !== "y") {
+  printCurrentScores();
+
+  let newChampion = checkForChampion();
+  if (newChampion !== false) {
+    console.log(`\nCongratulations to the new Grand Winner, ${newChampion}!`);
     tournamentInProgress = false;
   }
 }
