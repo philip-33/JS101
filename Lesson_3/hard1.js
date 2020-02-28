@@ -64,13 +64,26 @@ Code was modified to resolve errors when present in the same file
 
 /*
 Function A will print:
-"one is: ['two']"
-"two is: ['three']"
-"three is: ['two']"
-Incorrect.
+"one is: two"
+"two is: three"
+"three is: two"
+Incorrect. This is because the assignments were all references that
+only exist within the scope of messWithVarsA(). Once the function
+completes, the new references are destroyed.
 
 Function B will print:
+"one is: one"
+"two is: two"
+"three is: three"
+This was correct, but I changed my answer after researching why
+my answer for A was wrong. This is the same issue, where there are only temporary (scoped) assignments that overwrite the original variables.
 
+Function C will print:
+"one is: two"
+"two is: three"
+"three is: two"
+Correct. The MDN for .splice() explicitly states that it modifies the array.
+Since it was a reference, not a copy, the output changed.
 */
 
 //Function A
