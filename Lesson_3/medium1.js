@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+
 // Question 1
 /*
 For this practice problem,
@@ -167,6 +169,7 @@ the precision necessary to do this correctly.
 What do you think the following code will output?
 */
 let nanArray = [NaN];
+// eslint-disable-next-line use-isnan
 console.log(nanArray[0] === NaN); // eslint warns against this.
 /*
 Javascript does not allow comparison operators to determine NaN, so
@@ -204,7 +207,7 @@ The answer variable is never directly modified until the console statement.
 
 // Question 8
 /*
-One day, Spot was playing with the Munster family's home computer, 
+One day, Spot was playing with the Munster family's home computer,
 and he wrote a small program to mess with their demographic data:
 */
 
