@@ -139,9 +139,45 @@ console.log(`three is: ${three}`);
 
 // Question 4
 /*
+Ben was tasked to write a simple javascript function to determine whether an input string is an IP address using 4 dot-separated numbers, e.g., 10.4.5.11. He is not familiar with regular expressions.
 
+Alyssa supplied Ben with a function named isAnIpNumber. It determines whether a string is a numeric string between 0 and 255 as required for IP numbers and asked Ben to use it. Here's the code that Ben wrote:
+
+function isDotSeparatedIpAddress(inputString) {
+  let dotSeparatedWords = inputString.split(".");
+  while (dotSeparatedWords.length > 0) {
+    let word = dotSeparatedWords.pop();
+    if (!isAnIpNumber(word)) {
+      break;
+    }
+  }
+
+  return true;
+}
+
+Alyssa reviewed Ben's code and said, "It's a good start, but you missed a few things. You're not returning a false condition, and you're not handling the case when the input string has more or less than 4 components, e.g., 4.5.5 or 1.2.3.4.5: both those values should be invalid."
+
+See comments for code changes
 */
 
-/*
+function isDotSeparatedIpAddress(inputString) {
+    let dotSeparatedWords = inputString.split(".");
 
-*/
+  // add contion that checks for length 4
+  if (dotSeparatedWords.length !== 4) {
+    return false;
+  }
+  
+  while (dotSeparatedWords.length > 0) {
+    // force the popped word to be a number
+    let word = Number(dotSeparatedWords.pop());
+
+    // modify if statement to check for number range between 0-255
+    // also include a check to guarantee that word is a number
+    if (isNaN(word) || word < 0 || word > 255) {
+      return false;
+    }
+  }
+
+  return true;
+}
