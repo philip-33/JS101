@@ -3,7 +3,6 @@ Add up all of the ages from the Munster family object:
 
 input: object with names and ages
 output: interger of total of ages
-
 */
 
 let ages = {
