@@ -5,9 +5,9 @@ write some code to return an array which
 contains only the objects where all the numbers are even.
 
 algo
-loop through elements in array (map)
-  return loop through object keys in elements (filter)
-    return key value where value subarray elements are all even
+filter some objects in array (filter)
+  loop through values in object (every)
+    return subArray where all elements are even (every)
 
 */
 
@@ -18,13 +18,11 @@ let arr = [
 ];
 
 function evenObjects(array) {
-  array.forEach(element => {
-    Object.values(element).filter(value => {
-      return value.every(number => number % 2 === 0);
+  return array.filter(obj => {
+    return Object.values(obj).every(subArray => {
+      return subArray.every(number => number % 2 === 0);
     });
   });
-
-  return array;
 }
 
 console.log(evenObjects(arr));
