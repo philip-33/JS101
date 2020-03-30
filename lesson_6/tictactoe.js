@@ -202,10 +202,10 @@ function findAtRiskSquare(board, marker) {
 function computerTurnAI(board) {
   if (checkCenterSquare(board)) {
     return '5';
-  } else if (findAtRiskSquare(board, HUMAN_MARKER)) {
-    return findAtRiskSquare(board, HUMAN_MARKER);
   } else if (findAtRiskSquare(board, COMPUTER_MARKER)) {
     return findAtRiskSquare(board, COMPUTER_MARKER);
+  } else if (findAtRiskSquare(board, HUMAN_MARKER)) {
+    return findAtRiskSquare(board, HUMAN_MARKER);
   }
   let randomValue = Math.floor(Math.random() * emptySquares(board).length);
   return emptySquares(board)[randomValue];
@@ -221,12 +221,12 @@ while (true) {
     let board = initializeBoard();
 
     while (true) {
+      computerChoosesSquare(board);
+      if (someoneWon(board) || boardFull(board)) break;
+
       displayBoard(board, scores);
 
       playerChoosesSquare(board);
-      if (someoneWon(board) || boardFull(board)) break;
-
-      computerChoosesSquare(board);
       if (someoneWon(board) || boardFull(board)) break;
     }
 
