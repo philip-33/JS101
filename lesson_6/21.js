@@ -156,6 +156,7 @@ function cardIsPresent(suit, value, shoe) {
 function drawCardFromShoe(shoe) {
   let suit;
   let value;
+
   do {
     suit = getCardSuit(Math.round(rng() * 3));
     value = getCardValue(Math.round(rng() * 13));
@@ -171,12 +172,12 @@ function drawCardFromShoe(shoe) {
 
 function mainGameLoop() {
   while (true) {
-    let cutCardIndex = DECK_INIT_ARRAY.length / CUT_CARD_SEED_RATIO;
     let shoe = {};
     shoe['♠️'] = initializeDeck();
     shoe['♥️'] = initializeDeck();
     shoe['♦️'] = initializeDeck();
     shoe['♣️'] = initializeDeck();
+    let cutCardIndex = totalRemainingCards(shoe) / CUT_CARD_SEED_RATIO;
 
     while (totalRemainingCards(shoe) > cutCardIndex) {
       for (let idx = 0; idx < 210; idx++) {
