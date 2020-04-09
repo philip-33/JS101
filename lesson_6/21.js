@@ -12,25 +12,28 @@ In addition to the Launch School requirements, the following has been added:
   single stack. A "shoe" deters cheating and make the cards quick to draw.
 
 - Implementing a "cut card" feature:
-  Before a new shoe is used, a thick plastic card is inserted randomly into the
-  shoe near the end (approx. 1/4 to 1/3 from the end). Once this plastic marker
-  is drawn, the shoe is swapped out for a completely new set of decks in a
-  different shoe.
+  When a new shoe is used, a plastic card is inserted randomly into the
+  deck near the end (approx. 1/4 to 1/3 from the end). Once this plastic marker
+  is drawn, the used shoe is swapped out for one with a full set of decks.
 
-- The dealer will hit on a soft 17 (Ace + six)
+- Implemented the dealer hitting on a soft 17 (Ace + six)
+
+- Other: minimal GUI, show the values of the hands to the player
 
 Deck: 260 cards (5 decks).
 
 Game Goal: get as close as possible to 21 w/o going over
 
-Setup: Dealer, Player dealt 2 cards.
-  Player can see both of their cards, and also one of the dealer's cards
-Card values:
+Setup: Dealer and Player are dealt 2 cards.
+  During the player's turn, they can only see one of the dealer cards
+
 Card      Value
+----    ----------
 2-10    face value
 JQK         10
 Ace       1 or 11
-An Ace only counts as 1 if an 11 would bust
+An Ace only counts as 1 if an 11 would bust.
+The hand is always calculated to get the best possible score
 
 Player Turn:
 Always goes first.
@@ -38,14 +41,17 @@ The player can hit until they bust or stay.
 Lose on bust.
 
 Dealer Turn:
-Once the player stays, it's the dealer turn.
+show all cards now.
+Once the player stays or busts, it's the dealer turn.
+If the player busts, the dealer stays.
+Otherwise,
 The dealer must hit until the total is 17 or more.
-If the dealer busts, the player wins
 
 Comparing:
-if both the player and dealer stay, show all cards.
-total the cards based on the values above.
-The winner has the higher total
+the winner is the player with the highest score that is 21 or less
+score above 21 is bust
+if both players have the same score 21 or less, that is a push
+if both players bust, **the player loses**
 
 pseudocode:
 1. Init deck
@@ -75,12 +81,10 @@ const rng = seedrandom();
 const CUT_CARD_RATIO = 0.33;
 const CUT_CARD_VARIATION = 0.15;
 const CARD_ICON = '🂠';
-const DISABLE_SCREEN_CLEAR = true;
+const DEBUG_MODE = true;
 
 //prettier-ignore
 const DECK_INIT_ARRAY = ['A', 'A', 'A', 'A', 'A', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '10', '10', '10', '10', '10', 'J', 'J', 'J', 'J', 'J', 'Q', 'Q', 'Q', 'Q', 'Q', 'K', 'K', 'K', 'K', 'K'];
-
-const CARD_VALUE_INDEX = [0, 11, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function prompt(msg) {
   console.log(`=> ${msg}`);
@@ -255,21 +259,24 @@ function displayCardTable(playerCards, houseCards, dealerCardIsFaceDown) {
     show the dealer's whole hand
     display the total score
   */
-  if (!DISABLE_SCREEN_CLEAR) console.clear();
+  if (!DEBUG_MODE) console.clear();
+  console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
   if (dealerCardIsFaceDown) {
     console.log(
-      `\nThe House's hand: ${houseCards[0][0]}${houseCards[0][1]} ${CARD_ICON}`
-    );
-    console.log(
-      `The House's hand is showing ${calcHandValue([houseCards[0]])}`
+      `Dealer Hand : ${houseCards[0][0]}${
+        houseCards[0][1]
+      } ${CARD_ICON}  (${calcHandValue([houseCards[0]])})`
     );
   } else {
-    console.log(`\nThe House's hand: ${displayHand(houseCards)}`);
-    console.log(`The House's hand value is ${calcHandValue(houseCards)}`);
+    console.log(
+      `Dealer Hand : ${displayHand(houseCards)}(${calcHandValue(houseCards)})`
+    );
   }
 
-  console.log(`\nThe Player's hand: ${displayHand(playerCards)}`);
-  console.log(`The Player's hand value is ${calcHandValue(playerCards)}`);
+  console.log(
+    `\nPlayer Hand : ${displayHand(playerCards)}(${calcHandValue(playerCards)})`
+  );
+  console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
 }
 
 function generateCutCardIndex(shoe) {
@@ -287,15 +294,11 @@ function generateCutCardIndex(shoe) {
   return Math.floor(CUT_CARD_RATIO * totalCards + additionalCards);
 }
 
-function hit(cardArray, shoe) {}
-
 function houseTurn(houseCards, shoe) {
   /*
-    hit until value is 17 or greater.
-    if 17 with aces, hit,
-    else if <= 17, hit,
-    else, stay
-    handHasAces(houseCards)
+    hit until value is 17 or greater and not busted.
+    if 17 with aces, hit one more time,
+    if < 17, hit until value is 17 or greater and not busted.
   */
 
   while (
@@ -305,7 +308,14 @@ function houseTurn(houseCards, shoe) {
     houseCards.push(drawCardFromShoe(shoe));
   }
 
-  if (handHasAces(houseCards) && calcHandValue(houseCards) === 17) {
+  if (calcHandValue(houseCards) === 17 && handHasAces(houseCards)) {
+    houseCards.push(drawCardFromShoe(shoe));
+  }
+
+  while (
+    calcHandValue(houseCards) < 17 &&
+    handHasBusted(houseCards) === false
+  ) {
     houseCards.push(drawCardFromShoe(shoe));
   }
 
@@ -317,6 +327,7 @@ function playerTurn(playerCards, shoe) {
     if the total is less than 21, ask to stay or hit
     on stay, the function is done
   */
+  return playerCards;
 }
 
 function mainGameLoop() {
@@ -329,7 +340,6 @@ function mainGameLoop() {
     let cutCard = generateCutCardIndex(shoe);
 
     while (totalRemainingCards(shoe) > cutCard) {
-      console.log(`\n=== A new hand is being dealt! ===`);
       let playerCards = [];
       let houseCards = [];
       let dealerCardIsFaceDown = true;
@@ -339,10 +349,7 @@ function mainGameLoop() {
       playerCards.push(drawCardFromShoe(shoe));
       houseCards.push(drawCardFromShoe(shoe));
       displayCardTable(playerCards, houseCards, dealerCardIsFaceDown);
-
-      // player turn
-      displayCardTable(playerCards, houseCards, dealerCardIsFaceDown);
-
+      playerCards = playerTurn(playerCards, shoe);
       dealerCardIsFaceDown = false;
       houseCards = houseTurn(houseCards, shoe); // dealer turn
       displayCardTable(playerCards, houseCards, dealerCardIsFaceDown);
