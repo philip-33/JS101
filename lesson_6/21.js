@@ -18,7 +18,10 @@ In addition to the Launch School requirements, the following has been added:
 
 - Implemented the dealer hitting on a soft 17 (Ace + six)
 
-- Other: minimal GUI, show the values of the hands to the player
+- ASCII GUI with card suits and delays during the dealer play loop to give the
+  impression of drawing cards.
+
+- Other: , show the values of the hands to the player
 
 Deck: 260 cards (5 decks).
 
@@ -74,15 +77,30 @@ The first is 1-4 for the suit,
 the second is between 1 and 14 for the value.
 This model will need to check the available cards each time.
 If the card selected is not available, just draw another card.
+
+this game is not back and forth like tic tac toe, it's first and second.
+Both players could lose until the final decision
+
+draw cards for both players (alternating). Second dealer card is face down
+The dealer's card does not go face up until the dealer takes their turn.
+
+player goes through actions until stay or bust, each new card is added
+dealer card goes face up
+computer goes through actions until stay or bust, each new card is added
+
 */
 
-let seedrandom = require('seedrandom');
+const readline = require('readline-sync');
+const seedrandom = require('seedrandom');
+
+const DEBUG_MODE = true;
+
 const rng = seedrandom();
 const CUT_CARD_RATIO = 0.33;
 const CUT_CARD_VARIATION = 0.15;
 const CARD_ICON = '🂠';
-const DEBUG_MODE = true;
-
+const DEALER_DRAW_DELAY = 500;
+const SUIT_INIT_ARRAY = ['♠️', '♥️', '♦️', '♣️'];
 //prettier-ignore
 const DECK_INIT_ARRAY = ['A', 'A', 'A', 'A', 'A', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '10', '10', '10', '10', '10', 'J', 'J', 'J', 'J', 'J', 'Q', 'Q', 'Q', 'Q', 'Q', 'K', 'K', 'K', 'K', 'K'];
 
@@ -90,18 +108,17 @@ function prompt(msg) {
   console.log(`=> ${msg}`);
 }
 
-function initializeDeck() {
-  /* step through the DECK_INIT_ARRAY, and for each element,
-      push it to a new empty array, then
-      return the new full array.
-  */
-  let newDeck = [];
+function wait(ms) {
+  let start = +new Date();
+  while (new Date() - start < ms);
+}
 
-  DECK_INIT_ARRAY.forEach((card) => {
-    newDeck.push(card);
+function initializeDeck(suitArray) {
+  let shoeObject = {};
+  suitArray.forEach((suit) => {
+    shoeObject[suit] = DECK_INIT_ARRAY.slice();
   });
-
-  return newDeck;
+  return shoeObject;
 }
 
 function totalRemainingCards(shoe) {
@@ -182,7 +199,7 @@ function handHasAces(cardArray) {
 function handHasBusted(cardArray) {
   let busted = false;
 
-  if (calcHandValue(cardArray) === 0) busted = true;
+  if (calcHandValue(cardArray) > 21) busted = true;
 
   return busted;
 }
@@ -195,7 +212,6 @@ function calcHandValue(cardArray) {
     and before returning the final value,
       convert enough aces from 11 to 1 so the hand is the best possible score.
   */
-
   let foundAceCount = 0;
   let total = 0;
   let valueArray = cardArray.map((card) => card[1]);
@@ -217,6 +233,11 @@ function calcHandValue(cardArray) {
   }
 
   return total;
+}
+
+function displayHandValue(score) {
+  if (score > 21) return 'BUST';
+  if (score <= 21) return String(score);
 }
 
 function drawCardFromShoe(shoe) {
@@ -249,7 +270,7 @@ function displayHand(cardArray) {
   return hand;
 }
 
-function displayCardTable(playerCards, houseCards, dealerCardIsFaceDown) {
+function displayCardTable(cardTable) {
   /*
   check the state of the dealer's face card.
   if hidden:
@@ -259,17 +280,22 @@ function displayCardTable(playerCards, houseCards, dealerCardIsFaceDown) {
     show the dealer's whole hand
     display the total score
   */
+
+  let dealerCards = cardTable.dealerCards.slice();
+  let playerCards = cardTable.playerCards.slice();
+  let dealerCardIsFaceDown = cardTable.dealerCardIsFaceDown;
+
   if (!DEBUG_MODE) console.clear();
   console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
   if (dealerCardIsFaceDown) {
     console.log(
-      `Dealer Hand : ${houseCards[0][0]}${
-        houseCards[0][1]
-      } ${CARD_ICON}  (${calcHandValue([houseCards[0]])})`
+      `Dealer Hand : ${dealerCards[0][0]}${
+        dealerCards[0][1]
+      } ${CARD_ICON}  (${calcHandValue([dealerCards[0]])})`
     );
   } else {
     console.log(
-      `Dealer Hand : ${displayHand(houseCards)}(${calcHandValue(houseCards)})`
+      `Dealer Hand : ${displayHand(dealerCards)}(${calcHandValue(dealerCards)})`
     );
   }
 
@@ -294,81 +320,137 @@ function generateCutCardIndex(shoe) {
   return Math.floor(CUT_CARD_RATIO * totalCards + additionalCards);
 }
 
-function houseTurn(houseCards, shoe) {
+function dealerTurn(cardTable, shoe) {
   /*
     hit until value is 17 or greater and not busted.
     if 17 with aces, hit one more time,
     if < 17, hit until value is 17 or greater and not busted.
   */
 
-  while (
-    calcHandValue(houseCards) < 17 &&
-    handHasBusted(houseCards) === false
-  ) {
-    houseCards.push(drawCardFromShoe(shoe));
-  }
-
-  if (calcHandValue(houseCards) === 17 && handHasAces(houseCards)) {
-    houseCards.push(drawCardFromShoe(shoe));
-  }
+  let dealerCards = cardTable.dealerCards.slice();
+  displayCardTable(cardTable);
 
   while (
-    calcHandValue(houseCards) < 17 &&
-    handHasBusted(houseCards) === false
+    calcHandValue(dealerCards) < 17 &&
+    handHasBusted(dealerCards) === false
   ) {
-    houseCards.push(drawCardFromShoe(shoe));
+    dealerCards.push(drawCardFromShoe(shoe));
+    cardTable.dealerCards = dealerCards;
+    console.log(`Dealer is drawing...`);
+    wait(DEALER_DRAW_DELAY);
+    displayCardTable(cardTable);
   }
 
-  return houseCards;
+  if (calcHandValue(dealerCards) === 17 && handHasAces(dealerCards)) {
+    dealerCards.push(drawCardFromShoe(shoe));
+    cardTable.dealerCards = dealerCards;
+    console.log(`Dealer is drawing...`);
+    wait(DEALER_DRAW_DELAY);
+    displayCardTable(cardTable);
+  }
+
+  while (
+    calcHandValue(dealerCards) < 17 &&
+    handHasBusted(dealerCards) === false
+  ) {
+    dealerCards.push(drawCardFromShoe(shoe));
+    cardTable.dealerCards = dealerCards;
+    console.log(`Dealer is drawing...`);
+    wait(DEALER_DRAW_DELAY);
+    displayCardTable(cardTable);
+  }
+
+  cardTable.dealerCards = dealerCards;
 }
 
-function playerTurn(playerCards, shoe) {
+function playerTurn(cardTable, shoe) {
   /*
     if the total is less than 21, ask to stay or hit
     on stay, the function is done
+
+    while score <= 21 and user wants to continue
+      ask to hit or stay
+
+      if stay, break
+      else
+      draw card from shoe
+      draw board
   */
-  return playerCards;
+  let playerCards = cardTable.playerCards.slice();
+  let playerStays = false;
+
+  while (calcHandValue(playerCards) <= 21 && playerStays === false) {
+    console.log(`Will you hit or stay?`);
+    prompt(`Press 1 to hit or any other key to stay.`);
+    let choice = readline.question().trim();
+
+    if (choice.match(/1/)) {
+      playerCards.push(drawCardFromShoe(shoe));
+    } else {
+      playerStays = true;
+    }
+
+    cardTable.playerCards = playerCards;
+    displayCardTable(cardTable);
+  }
+}
+
+function displayWinner(winnerData) {
+  prompt('found winner');
+}
+
+function detectWinner(cardTable) {
+  let playerScore = calcHandValue(cardTable.playerCards);
+  console.log(`${cardTable.dealerCards}`);
+  let dealerScore = calcHandValue(cardTable.dealerCards);
+  console.log(`detectwinner called cHV 2x`);
+  let playerIsBust = playerScore > 21;
+  let dealerIsBust = dealerScore > 21;
+  let winnerData = [];
+
+  if (playerScore > dealerScore && !playerIsBust) {
+    winnerData.push(`The Player wins with ${playerScore}.`);
+  } else if (dealerScore > playerScore && !dealerIsBust) {
+    winnerData.push(`The Dealer wins with ${dealerScore}.`);
+  } else if (dealerScore === playerScore && !playerIsBust) {
+    winnerData.push(`The players push, both with a score of ${playerScore}`);
+  } else if (playerIsBust && dealerIsBust) {
+    winnerData.push(`Both players bust, the dealer wins.`);
+  }
+
+  return winnerData;
 }
 
 function mainGameLoop() {
   while (true) {
-    let shoe = {};
-    shoe['♠️'] = initializeDeck();
-    shoe['♥️'] = initializeDeck();
-    shoe['♦️'] = initializeDeck();
-    shoe['♣️'] = initializeDeck();
+    let shoe = initializeDeck(SUIT_INIT_ARRAY);
     let cutCard = generateCutCardIndex(shoe);
 
     while (totalRemainingCards(shoe) > cutCard) {
-      let playerCards = [];
-      let houseCards = [];
-      let dealerCardIsFaceDown = true;
+      let cardTable = {
+        playerCards: [],
+        dealerCards: [],
+        dealerCardIsFaceDown: true,
+      };
 
-      playerCards.push(drawCardFromShoe(shoe));
-      houseCards.push(drawCardFromShoe(shoe));
-      playerCards.push(drawCardFromShoe(shoe));
-      houseCards.push(drawCardFromShoe(shoe));
-      displayCardTable(playerCards, houseCards, dealerCardIsFaceDown);
-      playerCards = playerTurn(playerCards, shoe);
-      dealerCardIsFaceDown = false;
-      houseCards = houseTurn(houseCards, shoe); // dealer turn
-      displayCardTable(playerCards, houseCards, dealerCardIsFaceDown);
-      // detect winner
+      cardTable.playerCards.push(drawCardFromShoe(shoe));
+      cardTable.dealerCards.push(drawCardFromShoe(shoe));
+      cardTable.playerCards.push(drawCardFromShoe(shoe));
+      cardTable.dealerCards.push(drawCardFromShoe(shoe));
+      displayCardTable(cardTable);
 
-      /*
-      this game is not back and forth like tic tac toe, it's first and second.
-      Both players could lose until the final decision
+      playerTurn(cardTable, shoe);
+      displayCardTable(cardTable);
+      cardTable.dealerCardIsFaceDown = false;
+      dealerTurn(cardTable, shoe); // dealer turn
+      displayCardTable(cardTable);
 
-      draw cards for both players (alternating). Second dealer card is face down
-      The dealer's card does not go face up until the dealer takes their turn.
-
-      player goes through actions until stay or bust, each new card is added
-      dealer card goes face up
-      computer goes through actions until stay or bust, each new card is added
-      */
+      prompt(`Another hand? Press q to quit, or any other key to play again.`);
+      let choice = readline.question().trim();
+      if (choice.match(/q/i)) break;
     }
 
-    prompt(`The shoe is too small, and will be refreshed.`);
+    prompt(`The cut card has been reached, so the decks will be replaced.`);
     break;
   }
   prompt('Thank you for playing!');
