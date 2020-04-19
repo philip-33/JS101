@@ -1,5 +1,5 @@
-/* eslint-disable max-statements */
 /* eslint-disable max-lines-per-function */
+/* eslint-disable max-statements */
 /* eslint-disable no-mixed-operators */
 'use strict';
 /*
@@ -93,14 +93,14 @@ computer goes through actions until stay or bust, each new card is added
 const readline = require('readline-sync');
 const seedrandom = require('seedrandom');
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 const rng = seedrandom();
 const CUT_CARD_RATIO = 0.33;
 const CUT_CARD_VARIATION = 0.15;
 const CARD_ICON = '🂠';
 const DEALER_DRAW_DELAY = 500;
-const SUIT_INIT_ARRAY = ['♠️', '♥️', '♦️', '♣️'];
+const SUIT_ARRAY = ['♠️', '♥️', '♦️', '♣️'];
 //prettier-ignore
 const DECK_INIT_ARRAY = ['A', 'A', 'A', 'A', 'A', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '10', '10', '10', '10', '10', 'J', 'J', 'J', 'J', 'J', 'Q', 'Q', 'Q', 'Q', 'Q', 'K', 'K', 'K', 'K', 'K'];
 
@@ -235,11 +235,6 @@ function calcHandValue(cardArray) {
   return total;
 }
 
-function displayHandValue(score) {
-  if (score > 21) return 'BUST';
-  if (score <= 21) return String(score);
-}
-
 function drawCardFromShoe(shoe) {
   let suit;
   let value;
@@ -271,16 +266,6 @@ function displayHand(cardArray) {
 }
 
 function displayCardTable(cardTable) {
-  /*
-  check the state of the dealer's face card.
-  if hidden:
-    show the dealer's hand with one card hidden,
-    display the score of the single card
-  if not hidden:
-    show the dealer's whole hand
-    display the total score
-  */
-
   let dealerCards = cardTable.dealerCards.slice();
   let playerCards = cardTable.playerCards.slice();
   let dealerCardIsFaceDown = cardTable.dealerCardIsFaceDown;
@@ -306,13 +291,6 @@ function displayCardTable(cardTable) {
 }
 
 function generateCutCardIndex(shoe) {
-  /*
-    get total cards
-    multiply by const rate
-    add (or subtract a random number of cards),
-    verify this number is less than the total cards available
-    return the value to be used to emulate the cut card
-  */
   let totalCards = totalRemainingCards(shoe);
   let variationRatio = totalCards * CUT_CARD_VARIATION;
   let additionalCards = Math.floor(rng() * variationRatio - variationRatio / 2);
@@ -321,12 +299,6 @@ function generateCutCardIndex(shoe) {
 }
 
 function dealerTurn(cardTable, shoe) {
-  /*
-    hit until value is 17 or greater and not busted.
-    if 17 with aces, hit one more time,
-    if < 17, hit until value is 17 or greater and not busted.
-  */
-
   let dealerCards = cardTable.dealerCards.slice();
   displayCardTable(cardTable);
 
@@ -395,36 +367,38 @@ function playerTurn(cardTable, shoe) {
   }
 }
 
-function displayWinner(winnerData) {
-  prompt('found winner');
-}
-
-function detectWinner(cardTable) {
+function getWinnerString(cardTable) {
   let playerScore = calcHandValue(cardTable.playerCards);
-  console.log(`${cardTable.dealerCards}`);
   let dealerScore = calcHandValue(cardTable.dealerCards);
-  console.log(`detectwinner called cHV 2x`);
   let playerIsBust = playerScore > 21;
   let dealerIsBust = dealerScore > 21;
-  let winnerData = [];
 
-  if (playerScore > dealerScore && !playerIsBust) {
-    winnerData.push(`The Player wins with ${playerScore}.`);
-  } else if (dealerScore > playerScore && !dealerIsBust) {
-    winnerData.push(`The Dealer wins with ${dealerScore}.`);
-  } else if (dealerScore === playerScore && !playerIsBust) {
-    winnerData.push(`The players push, both with a score of ${playerScore}`);
-  } else if (playerIsBust && dealerIsBust) {
-    winnerData.push(`Both players bust, the dealer wins.`);
+  if (dealerIsBust && playerIsBust) {
+    return `Both players BUST. The Dealer wins.`;
+  }
+  if (!dealerIsBust && playerIsBust) {
+    return `The Player BUST, so the Dealer wins.`;
+  }
+  if (dealerIsBust && !playerIsBust) {
+    return `The Dealer BUST, so the Player wins.`;
   }
 
-  return winnerData;
+  if (playerScore === dealerScore) return `The players PUSH. No winner.`;
+
+  if (playerScore > dealerScore) {
+    return `The Player wins, showing ${playerScore} over the Dealer's ${dealerScore}`;
+  } else if (dealerScore > playerScore) {
+    return `The Dealer wins, showing ${dealerScore} over the Player's ${playerScore}`;
+  }
+
+  return "Couldn't find winner!";
 }
 
 function mainGameLoop() {
   while (true) {
-    let shoe = initializeDeck(SUIT_INIT_ARRAY);
+    let shoe = initializeDeck(SUIT_ARRAY);
     let cutCard = generateCutCardIndex(shoe);
+    let playerChoice = '';
 
     while (totalRemainingCards(shoe) > cutCard) {
       let cardTable = {
@@ -442,16 +416,20 @@ function mainGameLoop() {
       playerTurn(cardTable, shoe);
       displayCardTable(cardTable);
       cardTable.dealerCardIsFaceDown = false;
-      dealerTurn(cardTable, shoe); // dealer turn
+      dealerTurn(cardTable, shoe);
       displayCardTable(cardTable);
 
-      prompt(`Another hand? Press q to quit, or any other key to play again.`);
-      let choice = readline.question().trim();
-      if (choice.match(/q/i)) break;
-    }
+      console.log(getWinnerString(cardTable));
 
-    prompt(`The cut card has been reached, so the decks will be replaced.`);
-    break;
+      prompt(`Another hand? Press q to quit, or any other key to play again.`);
+      playerChoice = readline.question().trim();
+      if (playerChoice.match(/q/i)) break;
+    }
+    if (playerChoice.match(/q/i)) break;
+    console.log(
+      `The cut card has been reached, and a new shoe has been shuffled.\nPress Enter to continue.`
+    );
+    readline.question().trim();
   }
   prompt('Thank you for playing!');
 }
