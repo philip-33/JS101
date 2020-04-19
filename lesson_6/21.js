@@ -12,23 +12,23 @@ In addition to the Launch School requirements, the following has been added:
   single stack. A "shoe" deters cheating and make the cards quick to draw.
 
 - Implementing a "cut card" feature:
-  When a new shoe is used, a plastic card is inserted randomly into the
-  deck near the end (approx. 1/4 to 1/3 from the end). Once this plastic marker
-  is drawn, the used shoe is swapped out for one with a full set of decks.
+  When a new shoe is brought into play, a plastic card is inserted randomly
+  into the deck near the end (approx. 1/4 to 1/3 from the end). Once this
+  plastic marker is drawn, the used shoe is swapped out for a new one.
 
-- Implemented the dealer hitting on a soft 17 (Ace + six)
+- Implemented the dealer hitting on a soft 17 (a score of 17 with aces)
 
 - ASCII GUI with card suits and delays during the dealer play loop to give the
   impression of drawing cards.
 
-- Other: , show the values of the hands to the player
+- Other: show the values of the hands to the player
 
 Deck: 260 cards (5 decks).
 
 Game Goal: get as close as possible to 21 w/o going over
 
 Setup: Dealer and Player are dealt 2 cards.
-  During the player's turn, they can only see one of the dealer cards
+During the player's turn, they can only see one of the dealer cards
 
 Card      Value
 ----    ----------
@@ -37,24 +37,6 @@ JQK         10
 Ace       1 or 11
 An Ace only counts as 1 if an 11 would bust.
 The hand is always calculated to get the best possible score
-
-Player Turn:
-Always goes first.
-The player can hit until they bust or stay.
-Lose on bust.
-
-Dealer Turn:
-show all cards now.
-Once the player stays or busts, it's the dealer turn.
-If the player busts, the dealer stays.
-Otherwise,
-The dealer must hit until the total is 17 or more.
-
-Comparing:
-the winner is the player with the highest score that is 21 or less
-score above 21 is bust
-if both players have the same score 21 or less, that is a push
-if both players bust, **the player loses**
 
 pseudocode:
 1. Init deck
@@ -68,26 +50,8 @@ pseudocode:
     -if dealer busts, player wins
 5. Compare and declare
 
-Data structure for deck?
-object with a key for each suit, and their values would be an array with
-5 elements of each card
-
-To draw a card, generate 2 random numbers.
-The first is 1-4 for the suit,
-the second is between 1 and 14 for the value.
-This model will need to check the available cards each time.
-If the card selected is not available, just draw another card.
-
 this game is not back and forth like tic tac toe, it's first and second.
-Both players could lose until the final decision
-
-draw cards for both players (alternating). Second dealer card is face down
-The dealer's card does not go face up until the dealer takes their turn.
-
-player goes through actions until stay or bust, each new card is added
-dealer card goes face up
-computer goes through actions until stay or bust, each new card is added
-
+Both players could lose before the final decision
 */
 
 const readline = require('readline-sync');
@@ -183,9 +147,6 @@ function cardIsPresent(suit, value, shoe) {
 }
 
 function handHasAces(cardArray) {
-  /*
-    step through each element of the array, taking [idx][1]
-  */
   let hasAces = false;
   let foundAces = cardArray.filter((card) => {
     return card[1] === 'A';
@@ -196,22 +157,7 @@ function handHasAces(cardArray) {
   return hasAces;
 }
 
-function handHasBusted(cardArray) {
-  let busted = false;
-
-  if (calcHandValue(cardArray) > 21) busted = true;
-
-  return busted;
-}
-
 function calcHandValue(cardArray) {
-  /*
-    walk through the array, adding up all the values.
-      convert as necessary.
-    use a variable to track all found aces,
-    and before returning the final value,
-      convert enough aces from 11 to 1 so the hand is the best possible score.
-  */
   let foundAceCount = 0;
   let total = 0;
   let valueArray = cardArray.map((card) => card[1]);
@@ -231,7 +177,6 @@ function calcHandValue(cardArray) {
     total -= 10;
     foundAceCount--;
   }
-
   return total;
 }
 
@@ -253,11 +198,6 @@ function drawCardFromShoe(shoe) {
 }
 
 function displayHand(cardArray) {
-  /*
-    step through each element of the array,
-      append to string in this format:
-        first element (no space) second element (space)
-  */
   let hand = '';
   cardArray.forEach((card) => {
     hand += card[0] + card[1] + ' ';
@@ -300,54 +240,23 @@ function generateCutCardIndex(shoe) {
 
 function dealerTurn(cardTable, shoe) {
   let dealerCards = cardTable.dealerCards.slice();
+  let handValue = calcHandValue(dealerCards);
   displayCardTable(cardTable);
 
-  while (
-    calcHandValue(dealerCards) < 17 &&
-    handHasBusted(dealerCards) === false
-  ) {
-    dealerCards.push(drawCardFromShoe(shoe));
-    cardTable.dealerCards = dealerCards;
+  while (handValue < 17 || (handValue === 17 && handHasAces(dealerCards))) {
     console.log(`Dealer is drawing...`);
     wait(DEALER_DRAW_DELAY);
-    displayCardTable(cardTable);
-  }
 
-  if (calcHandValue(dealerCards) === 17 && handHasAces(dealerCards)) {
     dealerCards.push(drawCardFromShoe(shoe));
     cardTable.dealerCards = dealerCards;
-    console.log(`Dealer is drawing...`);
-    wait(DEALER_DRAW_DELAY);
     displayCardTable(cardTable);
-  }
-
-  while (
-    calcHandValue(dealerCards) < 17 &&
-    handHasBusted(dealerCards) === false
-  ) {
-    dealerCards.push(drawCardFromShoe(shoe));
-    cardTable.dealerCards = dealerCards;
-    console.log(`Dealer is drawing...`);
-    wait(DEALER_DRAW_DELAY);
-    displayCardTable(cardTable);
+    handValue = calcHandValue(dealerCards);
   }
 
   cardTable.dealerCards = dealerCards;
 }
 
 function playerTurn(cardTable, shoe) {
-  /*
-    if the total is less than 21, ask to stay or hit
-    on stay, the function is done
-
-    while score <= 21 and user wants to continue
-      ask to hit or stay
-
-      if stay, break
-      else
-      draw card from shoe
-      draw board
-  */
   let playerCards = cardTable.playerCards.slice();
   let playerStays = false;
 
