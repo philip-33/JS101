@@ -7,51 +7,23 @@ Twenty-One (not blackjack...)
 This program uses NPM packages for seedrandom and readline-sync.
 
 In addition to the Launch School requirements, the following has been added:
-- 5 decks instead of a single deck:
+- 5 decks (260 cards) instead of a single deck:
   Traditionally, multiple decks of cards are shuffled together and dealt from a
-  single stack. A "shoe" deters cheating and make the cards quick to draw.
+  single stack in a box called a "shoe". A shoe makes drawing cards easier and
+  helps against dealer cheating.
 
 - Implementing a "cut card" feature:
   When a new shoe is brought into play, a plastic card is inserted randomly
   into the deck near the end (approx. 1/4 to 1/3 from the end). Once this
-  plastic marker is drawn, the used shoe is swapped out for a new one.
+  plastic marker is drawn, the current hand is completed and then the used
+  shoe is swapped out for a new one.
 
-- Implemented the dealer hitting on a soft 17 (a score of 17 with aces)
+- Implemented the dealer hitting on a soft 17 (a score of 17 with aces).
 
-- ASCII GUI with card suits and delays during the dealer play loop to give the
-  impression of drawing cards.
+- ASCII GUI with card suits and hand totals, delays during the dealer play loop
+  to give the impression of drawing cards
 
-- Other: show the values of the hands to the player
-
-Deck: 260 cards (5 decks).
-
-Game Goal: get as close as possible to 21 w/o going over
-
-Setup: Dealer and Player are dealt 2 cards.
-During the player's turn, they can only see one of the dealer cards
-
-Card      Value
-----    ----------
-2-10    face value
-JQK         10
-Ace       1 or 11
-An Ace only counts as 1 if an 11 would bust.
-The hand is always calculated to get the best possible score
-
-pseudocode:
-1. Init deck
-2. Deal cards (first card goes to player, first dealer card is face down)
-              (initial cards are dealt to alternating players)
-3. Player turn: hit or stay
-    -repeat until bust or stay
-    -if player busts, dealer wins
-4. Dealer turn: hit or stay
-    -repeat until total >= 17
-    -if dealer busts, player wins
-5. Compare and declare
-
-this game is not back and forth like tic tac toe, it's first and second.
-Both players could lose before the final decision
+- Streamlined input detection with fail-open user choices
 */
 
 const readline = require('readline-sync');
@@ -64,6 +36,8 @@ const CUT_CARD_RATIO = 0.33;
 const CUT_CARD_VARIATION = 0.15;
 const CARD_ICON = '🂠';
 const DEALER_DRAW_DELAY = 500;
+const SCORE_LIMIT = 21;
+const DEALER_LIMIT = SCORE_LIMIT - 5;
 const SUIT_ARRAY = ['♠️', '♥️', '♦️', '♣️'];
 //prettier-ignore
 const DECK_INIT_ARRAY = ['A', 'A', 'A', 'A', 'A', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '10', '10', '10', '10', '10', 'J', 'J', 'J', 'J', 'J', 'Q', 'Q', 'Q', 'Q', 'Q', 'K', 'K', 'K', 'K', 'K'];
@@ -146,25 +120,14 @@ function cardIsPresent(suit, value, shoe) {
   return false;
 }
 
-function handHasAces(cardArray) {
-  let hasAces = false;
-  let foundAces = cardArray.filter((card) => {
-    return card[1] === 'A';
-  });
-
-  if (foundAces.length > 0) hasAces = true;
-
-  return hasAces;
-}
-
-function calcHandValue(cardArray) {
-  let foundAceCount = 0;
+function checkScoreOrAces(cardArray, requestedValue = '') {
+  let fullValueAces = 0;
   let total = 0;
   let valueArray = cardArray.map((card) => card[1]);
 
   valueArray.forEach((value) => {
     if (value === 'A') {
-      foundAceCount++;
+      fullValueAces++;
       total += 11;
     } else if (value === 'J' || value === 'Q' || value === 'K') {
       total += 10;
@@ -172,12 +135,20 @@ function calcHandValue(cardArray) {
       total += Number(value);
     }
   });
-
-  while (foundAceCount > 0 && total > 21) {
+  while (fullValueAces > 0 && total > SCORE_LIMIT) {
     total -= 10;
-    foundAceCount--;
+    fullValueAces--;
   }
-  return total;
+  if (requestedValue === 'fullValueAces') return fullValueAces;
+  else return total;
+}
+
+function getHandValue(cardArray) {
+  return checkScoreOrAces(cardArray);
+}
+
+function hasFullValueAces(cardArray) {
+  return checkScoreOrAces(cardArray, 'fullValueAces') > 0;
 }
 
 function drawCardFromShoe(shoe) {
@@ -216,16 +187,16 @@ function displayCardTable(cardTable) {
     console.log(
       `Dealer Hand : ${dealerCards[0][0]}${
         dealerCards[0][1]
-      } ${CARD_ICON}  (${calcHandValue([dealerCards[0]])})`
+      } ${CARD_ICON}  (${getHandValue([dealerCards[0]])})`
     );
   } else {
     console.log(
-      `Dealer Hand : ${displayHand(dealerCards)}(${calcHandValue(dealerCards)})`
+      `Dealer Hand : ${displayHand(dealerCards)}(${getHandValue(dealerCards)})`
     );
   }
 
   console.log(
-    `\nPlayer Hand : ${displayHand(playerCards)}(${calcHandValue(playerCards)})`
+    `\nPlayer Hand : ${displayHand(playerCards)}(${getHandValue(playerCards)})`
   );
   console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
 }
@@ -240,27 +211,29 @@ function generateCutCardIndex(shoe) {
 
 function dealerTurn(cardTable, shoe) {
   let dealerCards = cardTable.dealerCards.slice();
-  let handValue = calcHandValue(dealerCards);
+  let handValue = getHandValue(dealerCards);
   displayCardTable(cardTable);
 
-  while (handValue < 17 || (handValue === 17 && handHasAces(dealerCards))) {
+  while (
+    handValue < DEALER_LIMIT ||
+    (handValue === DEALER_LIMIT && hasFullValueAces(dealerCards))
+  ) {
     console.log(`Dealer is drawing...`);
     wait(DEALER_DRAW_DELAY);
 
     dealerCards.push(drawCardFromShoe(shoe));
     cardTable.dealerCards = dealerCards;
     displayCardTable(cardTable);
-    handValue = calcHandValue(dealerCards);
+    handValue = getHandValue(dealerCards);
   }
-
-  cardTable.dealerCards = dealerCards;
 }
 
 function playerTurn(cardTable, shoe) {
   let playerCards = cardTable.playerCards.slice();
+  let handValue = getHandValue(playerCards);
   let playerStays = false;
 
-  while (calcHandValue(playerCards) <= 21 && playerStays === false) {
+  while (handValue <= SCORE_LIMIT && playerStays === false) {
     console.log(`Will you hit or stay?`);
     prompt(`Press 1 to hit or any other key to stay.`);
     let choice = readline.question().trim();
@@ -273,14 +246,15 @@ function playerTurn(cardTable, shoe) {
 
     cardTable.playerCards = playerCards;
     displayCardTable(cardTable);
+    handValue = getHandValue(playerCards);
   }
 }
 
 function getWinnerString(cardTable) {
-  let playerScore = calcHandValue(cardTable.playerCards);
-  let dealerScore = calcHandValue(cardTable.dealerCards);
-  let playerIsBust = playerScore > 21;
-  let dealerIsBust = dealerScore > 21;
+  let playerScore = getHandValue(cardTable.playerCards);
+  let dealerScore = getHandValue(cardTable.dealerCards);
+  let playerIsBust = playerScore > SCORE_LIMIT;
+  let dealerIsBust = dealerScore > SCORE_LIMIT;
 
   if (dealerIsBust && playerIsBust) {
     return `Both players BUST. The Dealer wins.`;
