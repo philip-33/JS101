@@ -8,15 +8,15 @@ This program uses NPM packages for seedrandom and readline-sync.
 
 In addition to the Launch School requirements, the following has been added:
 - 5 decks (260 cards) instead of a single deck:
-  Traditionally, multiple decks of cards are shuffled together and dealt from a
+  In casino play, multiple decks of cards are shuffled together and dealt from a
   single stack in a box called a "shoe". A shoe makes drawing cards easier and
-  helps against dealer cheating.
+  deters dealer cheating.
 
 - Implementing a "cut card" feature:
   When a new shoe is brought into play, a plastic card is inserted randomly
   into the deck near the end (approx. 1/4 to 1/3 from the end). Once this
-  plastic marker is drawn, the current hand is completed and then the used
-  shoe is swapped out for a new one.
+  plastic marker is drawn, the current hand is completed, and the shoe is
+  swapped for a new one.
 
 - Implemented the dealer hitting on a soft 17 (a score of 17 with aces).
 
@@ -24,6 +24,7 @@ In addition to the Launch School requirements, the following has been added:
   to give the impression of drawing cards
 
 - Streamlined input detection with fail-open user choices
+  Mash enter to play forever!
 */
 
 const readline = require('readline-sync');
@@ -176,12 +177,19 @@ function displayHand(cardArray) {
   return hand;
 }
 
-function displayCardTable(cardTable) {
+function displayMatchScores(matchScores) {
+  let [playerScore, dealerScore] = matchScores;
+  console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
+  console.log(`Player Wins: ${playerScore}, Dealer Wins: ${dealerScore}`);
+}
+
+function displayCardTable(cardTable, matchScores = [0, 0]) {
   let dealerCards = cardTable.dealerCards.slice();
   let playerCards = cardTable.playerCards.slice();
   let dealerCardIsFaceDown = cardTable.dealerCardIsFaceDown;
 
   if (!DEBUG_MODE) console.clear();
+  displayMatchScores(matchScores);
   console.log(`+=+=+=+=+=+=+=+=+=+=+=+=+=+`);
   if (dealerCardIsFaceDown) {
     console.log(
@@ -209,10 +217,10 @@ function generateCutCardIndex(shoe) {
   return Math.floor(CUT_CARD_RATIO * totalCards + additionalCards);
 }
 
-function dealerTurn(cardTable, shoe) {
+function dealerTurn(cardTable, shoe, matchScores) {
   let dealerCards = cardTable.dealerCards.slice();
   let handValue = getHandValue(dealerCards);
-  displayCardTable(cardTable);
+  displayCardTable(cardTable, matchScores);
 
   while (
     handValue < DEALER_LIMIT ||
@@ -223,12 +231,12 @@ function dealerTurn(cardTable, shoe) {
 
     dealerCards.push(drawCardFromShoe(shoe));
     cardTable.dealerCards = dealerCards;
-    displayCardTable(cardTable);
+    displayCardTable(cardTable, matchScores);
     handValue = getHandValue(dealerCards);
   }
 }
 
-function playerTurn(cardTable, shoe) {
+function playerTurn(cardTable, shoe, matchScores) {
   let playerCards = cardTable.playerCards.slice();
   let handValue = getHandValue(playerCards);
   let playerStays = false;
@@ -245,36 +253,47 @@ function playerTurn(cardTable, shoe) {
     }
 
     cardTable.playerCards = playerCards;
-    displayCardTable(cardTable);
+    displayCardTable(cardTable, matchScores);
     handValue = getHandValue(playerCards);
   }
 }
 
-function getWinnerString(cardTable) {
+function getWinner(cardTable, matchScores) {
   let playerScore = getHandValue(cardTable.playerCards);
   let dealerScore = getHandValue(cardTable.dealerCards);
   let playerIsBust = playerScore > SCORE_LIMIT;
   let dealerIsBust = dealerScore > SCORE_LIMIT;
 
   if (dealerIsBust && playerIsBust) {
+    matchScores[1]++;
     return `Both players BUST. The Dealer wins.`;
   }
   if (!dealerIsBust && playerIsBust) {
+    matchScores[1]++;
     return `The Player BUST, so the Dealer wins.`;
   }
   if (dealerIsBust && !playerIsBust) {
+    matchScores[0]++;
     return `The Dealer BUST, so the Player wins.`;
   }
 
   if (playerScore === dealerScore) return `The players PUSH. No winner.`;
 
   if (playerScore > dealerScore) {
+    matchScores[0]++;
     return `The Player wins, showing ${playerScore} over the Dealer's ${dealerScore}`;
   } else if (dealerScore > playerScore) {
+    matchScores[1]++;
     return `The Dealer wins, showing ${dealerScore} over the Player's ${playerScore}`;
   }
+  return 'No winner.';
+}
 
-  return "Couldn't find winner!";
+function displayMatchWinner(matchScores) {
+  let [playerMatches, dealerMatches] = matchScores;
+  return playerMatches > dealerMatches
+    ? 'The Player wins the match!'
+    : 'The Dealer wins the match!';
 }
 
 function mainGameLoop() {
@@ -282,8 +301,12 @@ function mainGameLoop() {
     let shoe = initializeDeck(SUIT_ARRAY);
     let cutCard = generateCutCardIndex(shoe);
     let playerChoice = '';
+    let matchScores = [0, 0];
 
-    while (totalRemainingCards(shoe) > cutCard) {
+    while (
+      totalRemainingCards(shoe) > cutCard &&
+      matchScores.every((num) => num < 5)
+    ) {
       let cardTable = {
         playerCards: [],
         dealerCards: [],
@@ -294,25 +317,23 @@ function mainGameLoop() {
       cardTable.dealerCards.push(drawCardFromShoe(shoe));
       cardTable.playerCards.push(drawCardFromShoe(shoe));
       cardTable.dealerCards.push(drawCardFromShoe(shoe));
-      displayCardTable(cardTable);
+      displayCardTable(cardTable, matchScores);
 
-      playerTurn(cardTable, shoe);
-      displayCardTable(cardTable);
+      playerTurn(cardTable, shoe, matchScores);
+      displayCardTable(cardTable, matchScores);
       cardTable.dealerCardIsFaceDown = false;
-      dealerTurn(cardTable, shoe);
-      displayCardTable(cardTable);
+      dealerTurn(cardTable, shoe, matchScores);
+      displayCardTable(cardTable, matchScores);
 
-      console.log(getWinnerString(cardTable));
-
+      console.log(getWinner(cardTable, matchScores));
       prompt(`Another hand? Press q to quit, or any other key to play again.`);
       playerChoice = readline.question().trim();
-      if (playerChoice.match(/q/i)) break;
+      if (playerChoice.match(/q/i) || matchScores.includes((num) => num > 4)) {
+        break;
+      }
+      break;
     }
-    if (playerChoice.match(/q/i)) break;
-    console.log(
-      `The cut card has been reached, and a new shoe has been shuffled.\nPress Enter to continue.`
-    );
-    readline.question().trim();
+    break;
   }
   prompt('Thank you for playing!');
 }
