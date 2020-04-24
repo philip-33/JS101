@@ -38,7 +38,7 @@ const CUT_CARD_VARIATION_RATIO = 0.15;
 const DEALER_DRAW_DELAY = 500;
 const WINNER_REDRAW_DELAY = 500;
 const SCORE_LIMIT = 21;
-const DEALER_LIMIT = SCORE_LIMIT - 5;
+const DEALER_LIMIT = SCORE_LIMIT - 4;
 const MATCH_LIMIT = 5;
 const PLAYER_NAME = 'Player';
 const DEALER_NAME = 'Dealer';
@@ -155,7 +155,7 @@ function getHandValue(cardArray) {
   return checkScoreOrAces(cardArray);
 }
 
-function hasFullValueAces(cardArray) {
+function handHasFullValueAces(cardArray) {
   return checkScoreOrAces(cardArray, 'fullValueAces') > 0;
 }
 
@@ -237,7 +237,7 @@ function dealerTurn(cardTable, shoe, matchScores) {
 
   while (
     handValue < DEALER_LIMIT ||
-    (handValue === DEALER_LIMIT && hasFullValueAces(dealerCards))
+    (handValue === DEALER_LIMIT && handHasFullValueAces(dealerCards))
   ) {
     console.log(`Dealer is drawing...`);
     wait(DEALER_DRAW_DELAY);
@@ -377,7 +377,7 @@ function mainGameLoop() {
     }
 
     if (playerChoice.match(/q/i)) break;
-  } // init deck and matchscores loop ends here
+  } // init deck loop ends here
   prompt('Thank you for playing!');
 }
 
